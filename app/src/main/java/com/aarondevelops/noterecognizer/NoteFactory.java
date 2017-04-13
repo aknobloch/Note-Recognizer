@@ -1,6 +1,9 @@
 package com.aarondevelops.noterecognizer;
 
+import android.util.Log;
+
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Created by Aaron K on 4/12/2017.
@@ -25,6 +28,11 @@ public abstract class NoteFactory
     private static NoteInfo determineNote(double noteFrequency)
     {
         NoteInfo selectedNote = new NoteInfo(0.0, "-  ");
+        selectedNote.normalize(noteFrequency);
+        if(noteFrequency == -1.0)
+        {
+            return selectedNote;
+        }
 
         for (int i = 0; i < allNotes.size() - 1; i++)
         {
@@ -36,10 +44,10 @@ public abstract class NoteFactory
                     && nextNote.getFrequency() >= noteFrequency)
             {
                 selectedNote = getClosestNote(noteFrequency, currentNote, nextNote);
+                selectedNote.normalize(noteFrequency);
             }
         }
 
-        // if no note was found, return empty note
         return selectedNote;
     }
 
@@ -61,10 +69,10 @@ public abstract class NoteFactory
     private static class NoteInfo implements Note
     {
         double frequency;
+        double normalizedValue;
         char note;
         char pitch;
         char octave;
-        RelativePitch relativePitch;
 
         public NoteInfo(double frequency, String noteRepresentation)
         {
@@ -78,6 +86,12 @@ public abstract class NoteFactory
             note = noteRepresentation.charAt(0);
             pitch = noteRepresentation.charAt(1);
             octave = noteRepresentation.charAt(2);
+        }
+
+        @Override
+        public double getNormalizedValue()
+        {
+            return normalizedValue;
         }
 
         public char getNote()
@@ -94,20 +108,53 @@ public abstract class NoteFactory
         {
             return octave;
         }
-
-        public RelativePitch getRelativePitch()
-        {
-            return relativePitch;
-        }
-
         public double getFrequency()
         {
             return frequency;
         }
-
-        public void setRelativePitch(RelativePitch relativePitch)
+        public void normalize(double actualFrequency)
         {
-            this.relativePitch = relativePitch;
+            if(actualFrequency == - 1.0)
+            {
+                normalizedValue = .5;
+                return;
+            }
+
+            NoteInfo previousNote = new NoteInfo(0.0, "-  ");
+            NoteInfo nextNote = new NoteInfo(8500, "-  ");
+
+            Iterator noteIterator = allNotes.iterator();
+            while(noteIterator.hasNext())
+            {
+                NoteInfo currentNote = (NoteInfo) noteIterator.next();
+                if(currentNote.equals(this))
+                {
+                    if(noteIterator.hasNext())
+                    {
+                        nextNote = (NoteInfo) noteIterator.next();
+                    }
+
+                    break; // note found, stop
+                }
+
+                previousNote = currentNote;
+            }
+
+            double min = (this.frequency + previousNote.frequency) / 2;
+            double max = (this.frequency + nextNote.frequency) / 2;
+            this.normalizedValue = (actualFrequency - min) / (max - min);
+        }
+
+        public boolean equals(NoteInfo n)
+        {
+            if(this.frequency == n.frequency)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 
