@@ -24,6 +24,8 @@ public abstract class NoteFactory
 
     private static NoteInfo determineNote(double noteFrequency)
     {
+        NoteInfo selectedNote = new NoteInfo(0.0, "-  ");
+
         for (int i = 0; i < allNotes.size() - 1; i++)
         {
             NoteInfo currentNote = allNotes.get(i);
@@ -33,12 +35,12 @@ public abstract class NoteFactory
             if(currentNote.getFrequency() <= noteFrequency
                     && nextNote.getFrequency() >= noteFrequency)
             {
-                return getClosestNote(noteFrequency, currentNote, nextNote);
+                selectedNote = getClosestNote(noteFrequency, currentNote, nextNote);
             }
         }
 
         // if no note was found, return empty note
-        return new NoteInfo(0.0, "-  ");
+        return selectedNote;
     }
 
     private static NoteInfo getClosestNote(double noteFrequency, NoteInfo lowerNote, NoteInfo higherNote)
