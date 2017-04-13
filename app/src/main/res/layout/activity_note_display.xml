@@ -15,6 +15,7 @@
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
+        android:text="-"
         android:textSize="150sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -31,7 +32,6 @@
         app:layout_constraintLeft_toRightOf="@+id/tvBaseNote"
         app:layout_constraintTop_toTopOf="@+id/tvBaseNote"
         tools:text="#"
-        android:layout_marginLeft="0dp"
         android:layout_marginTop="0dp"/>
 
     <TextView
