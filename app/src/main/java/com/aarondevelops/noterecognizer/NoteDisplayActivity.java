@@ -12,20 +12,15 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import be.tarsos.dsp.AudioDispatcher;
-import be.tarsos.dsp.AudioEvent;
-import be.tarsos.dsp.io.android.AudioDispatcherFactory;
-import be.tarsos.dsp.pitch.PitchDetectionHandler;
-import be.tarsos.dsp.pitch.PitchDetectionResult;
-import be.tarsos.dsp.pitch.PitchProcessor;
-import be.tarsos.dsp.pitch.PitchProcessor.PitchEstimationAlgorithm;
-
-public class NoteDisplayActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback
+public class NoteDisplayActivity extends AppCompatActivity
+        implements ActivityCompat.OnRequestPermissionsResultCallback,
+                    PitchCallback
 {
     final int RECORD_AUDIO = 001;
+
+    private PitchHandler mPitchHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -35,6 +30,8 @@ public class NoteDisplayActivity extends AppCompatActivity implements ActivityCo
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        mPitchHandler = new PitchHandler(this, this);
 
         beginAudio();
     }
@@ -87,42 +84,20 @@ public class NoteDisplayActivity extends AppCompatActivity implements ActivityCo
 
     private void startAudioRecording()
     {
-        AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
-        dispatcher.addAudioProcessor(new PitchProcessor(PitchEstimationAlgorithm.FFT_YIN, 22050, 1024,
-                new PitchDetectionHandler() {
+        mPitchHandler.startPitchDetection();
+    }
 
-                    @Override
-                    public void handlePitch(PitchDetectionResult pitchDetectionResult,
-                                            AudioEvent audioEvent) {
+    @Override
+    public void onPitchDetected(Note detectedNote)
+    {
+        double range = 70;
+        float normalizedDegree = (float)
+                ((detectedNote.getNormalizedValue() * range) - 35);
 
-                        final float pitchInHz = pitchDetectionResult.getPitch();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-
-                                Note capturedNote = NoteFactory.createNote(pitchInHz);
-                                TextView tvNote = (TextView) findViewById(R.id.tvBaseNote);
-                                TextView tvPitch = (TextView) findViewById(R.id.tvPitch);
-                                TextView tvOctave = (TextView) findViewById(R.id.tvOctave);
-
-                                tvNote.setText("" + capturedNote.getNote());
-                                tvPitch.setText("" + capturedNote.getPitch());
-                                tvOctave.setText("" + capturedNote.getOctave());
-
-                                double range = 70;
-                                float normalizedDegree = (float)
-                                        ((capturedNote.getNormalizedValue() * range) - 35);
-
-                                ImageView needle = (ImageView) findViewById(R.id.imageView);
-                                needle.setPivotX(needle.getWidth() / 2);
-                                needle.setPivotY(needle.getHeight() - (needle.getHeight() / 10));
-                                needle.setRotation(normalizedDegree);
-
-                            }
-                        });
-            }
-        }));
-        new Thread(dispatcher,"Audio Dispatcher").start();
+        ImageView needle = (ImageView) findViewById(R.id.imageView);
+        needle.setPivotX(needle.getWidth() / 2);
+        needle.setPivotY(needle.getHeight() - (needle.getHeight() / 10));
+        needle.setRotation(normalizedDegree);
     }
 
     @Override
@@ -136,12 +111,8 @@ public class NoteDisplayActivity extends AppCompatActivity implements ActivityCo
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_about)
         {
              showAboutMessage();
